@@ -1,14 +1,11 @@
-```html
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>Devine le nombre</title>
+    <title>Devine le Nombre - V1.1</title>
 
     <style>
 
@@ -16,16 +13,9 @@
             box-sizing: border-box;
         }
 
-        html,
         body {
             margin: 0;
-            padding: 0;
-            width: 100%;
-            min-height: 100%;
-        }
-
-        body {
-            min-height: 100dvh;
+            min-height: 100vh;
 
             display: flex;
             justify-content: center;
@@ -37,8 +27,6 @@
             color: white;
 
             padding: 20px;
-
-            overflow-x: hidden;
         }
 
         .ecran {
@@ -69,9 +57,7 @@
 
             margin: 12px 0;
 
-            padding: 16px;
-
-            min-height: 55px;
+            padding: 15px;
 
             border: none;
             border-radius: 12px;
@@ -80,13 +66,7 @@
 
             cursor: pointer;
 
-            /* Très important pour le tactile */
             touch-action: manipulation;
-
-            user-select: none;
-            -webkit-user-select: none;
-
-            -webkit-tap-highlight-color: transparent;
         }
 
         button:active {
@@ -94,49 +74,59 @@
         }
 
         input {
-            width: 150px;
+            width: 130px;
 
             padding: 14px;
 
             margin: 10px;
 
             border: none;
-
             border-radius: 10px;
 
             font-size: 22px;
 
             text-align: center;
-
-            touch-action: manipulation;
         }
 
         #resultat {
             min-height: 35px;
 
             font-size: 20px;
-
             font-weight: bold;
         }
 
-        .petit {
-            font-size: 14px;
-            opacity: 0.7;
+        .cache {
+            display: none;
         }
 
-        .cache {
-            display: none !important;
+        .succes {
+            text-align: left;
+
+            padding: 12px;
+            margin: 10px 0;
+
+            border-radius: 12px;
+
+            background: #242450;
+        }
+
+        .succes.verrouille {
+            opacity: 0.5;
+        }
+
+        .rarete {
+            font-size: 14px;
         }
 
         @media (max-width: 500px) {
 
             body {
                 align-items: flex-start;
-                padding: 15px;
+                padding-top: 25px;
             }
 
             .ecran {
-                padding: 20px;
+                padding: 22px;
             }
 
             h1 {
@@ -144,19 +134,11 @@
             }
 
             button {
-                min-height: 60px;
                 padding: 17px;
-            }
-
-            input {
-                width: 100%;
-                max-width: 180px;
-                min-height: 55px;
             }
         }
 
     </style>
-
 </head>
 
 
@@ -180,35 +162,29 @@
         </p>
 
 
-        <button id="facile" type="button">
+        <button id="facile">
             🟢 FACILE
             <br>
-            <span class="petit">
-                1 à 10 • 5 vies
-            </span>
+            <small>1 à 10 • 5 vies</small>
         </button>
 
 
-        <button id="moyen" type="button">
-            🟠 MOYEN
+        <button id="moyen">
+            🔵 MOYEN
             <br>
-            <span class="petit">
-                1 à 50 • 4 vies
-            </span>
+            <small>1 à 50 • 4 vies</small>
         </button>
 
 
-        <button id="difficile" type="button">
+        <button id="difficile">
             🔴 DIFFICILE
             <br>
-            <span class="petit">
-                1 à 100 • 3 vies
-            </span>
+            <small>1 à 100 • 3 vies</small>
         </button>
 
 
-        <button id="partager" type="button">
-            📤 PARTAGER
+        <button id="boutonSucces">
+            🏆 SUCCÈS
         </button>
 
     </div>
@@ -240,17 +216,39 @@
             min="1"
             inputmode="numeric"
             placeholder="Nombre"
-            autocomplete="off"
         >
 
 
-        <button id="deviner" type="button">
+        <button id="deviner">
             🎯 DEVINER
         </button>
 
 
-        <button id="rejouer" type="button">
+        <button id="rejouer">
             🔄 REJOUER
+        </button>
+
+    </div>
+
+
+
+    <!-- ========================= -->
+    <!-- 🏆 SUCCÈS -->
+    <!-- ========================= -->
+
+    <div id="succes" class="ecran cache">
+
+        <h1>🏆 MES SUCCÈS</h1>
+
+        <p id="compteurSucces">
+            0 / 10 débloqués
+        </p>
+
+        <div id="listeSucces"></div>
+
+
+        <button id="retourSucces">
+            🔙 RETOUR
         </button>
 
     </div>
@@ -260,7 +258,7 @@
     <script>
 
         // =========================
-        // 🎲 VARIABLES
+        // 🎲 VARIABLES DU JEU
         // =========================
 
         let nombreSecret = 0;
@@ -268,29 +266,256 @@
         let essais = 0;
         let maximum = 0;
         let score = 0;
+
+        let difficulte = "";
+
         let partieTerminee = false;
 
 
 
         // =========================
-        // 🎮 COMMENCER LE JEU
+        // 🏆 LISTE DES SUCCÈS
         // =========================
 
-        function commencerJeu(max, nombreVies) {
+        const succes = [
+
+            {
+                id: "premier_coup",
+                nom: "🍀 Premier coup",
+                description: "Trouver le nombre du premier essai.",
+                rarete: "🟢 Commun"
+            },
+
+            {
+                id: "bien_joue",
+                nom: "🎯 Bien joué !",
+                description: "Gagner une partie.",
+                rarete: "🟢 Commun"
+            },
+
+            {
+                id: "padawan",
+                nom: "🧙 Padawan",
+                description: "Gagner une partie en facile.",
+                rarete: "🔵 Rare"
+            },
+
+            {
+                id: "survivant",
+                nom: "❤️ Survivant",
+                description: "Gagner avec seulement 1 vie restante.",
+                rarete: "🔵 Rare"
+            },
+
+            {
+                id: "guerrier",
+                nom: "⚔️ Guerrier",
+                description: "Gagner une partie en moyen.",
+                rarete: "🟣 Épique"
+            },
+
+            {
+                id: "collectionneur",
+                nom: "🏆 Collectionneur",
+                description: "Débloquer 5 succès.",
+                rarete: "🟣 Épique"
+            },
+
+            {
+                id: "centenaire",
+                nom: "💯 Centenaire",
+                description: "Gagner une partie avec 100 points.",
+                rarete: "🟠 Légendaire"
+            },
+
+            {
+                id: "maitre",
+                nom: "🔥 Maître",
+                description: "Gagner une partie en difficile.",
+                rarete: "🟠 Légendaire"
+            },
+
+            {
+                id: "triple_maitre",
+                nom: "👑 Triple Maître",
+                description:
+                    "Gagner 3 parties difficiles d'affilée en 2 coups maximum.",
+                rarete: "🔴 Mythique"
+            },
+
+            {
+                id: "eclair",
+                nom: "⚡ Éclair",
+                description:
+                    "Gagner 5 parties difficiles d'affilée avec 100 points.",
+                rarete: "🔴 Mythique"
+            }
+
+        ];
+
+
+
+        // =========================
+        // 💾 CHARGER LES SUCCÈS
+        // =========================
+
+        let succesDebloques =
+            JSON.parse(
+                localStorage.getItem("succesDevineNombre")
+            ) || [];
+
+
+
+        // =========================
+        // 📊 AUTRES DONNÉES
+        // =========================
+
+        let serieDifficile2 = 0;
+
+        let serieEclair = 0;
+
+
+
+        // =========================
+        // 🏆 AFFICHER LES SUCCÈS
+        // =========================
+
+        function afficherSucces() {
+
+            const liste =
+                document.getElementById("listeSucces");
+
+            liste.innerHTML = "";
+
+
+            succes.forEach(function (s) {
+
+                const element =
+                    document.createElement("div");
+
+                const estDebloque =
+                    succesDebloques.includes(s.id);
+
+
+                element.className =
+                    "succes " +
+                    (estDebloque ? "" : "verrouille");
+
+
+                element.innerHTML =
+
+                    (estDebloque ? "🟩 " : "🔒 ") +
+
+                    "<strong>" +
+                    s.nom +
+                    "</strong>" +
+
+                    "<br>" +
+
+                    "<span class='rarete'>" +
+                    s.rarete +
+                    "</span>" +
+
+                    "<br>" +
+
+                    "<small>" +
+                    s.description +
+                    "</small>";
+
+
+                liste.appendChild(element);
+
+            });
+
+
+            document
+                .getElementById("compteurSucces")
+                .textContent =
+                succesDebloques.length +
+                " / " +
+                succes.length +
+                " débloqués";
+
+        }
+
+
+
+        // =========================
+        // 🔓 DÉBLOQUER UN SUCCÈS
+        // =========================
+
+        function debloquerSucces(id) {
+
+            if (succesDebloques.includes(id)) {
+                return;
+            }
+
+
+            succesDebloques.push(id);
+
+
+            localStorage.setItem(
+                "succesDevineNombre",
+                JSON.stringify(succesDebloques)
+            );
+
+
+            const succesTrouve =
+                succes.find(function (s) {
+                    return s.id === id;
+                });
+
+
+            if (succesTrouve) {
+
+                alert(
+                    "🏆 SUCCÈS DÉBLOQUÉ !\n\n" +
+                    succesTrouve.nom +
+                    "\n" +
+                    succesTrouve.description
+                );
+
+            }
+
+
+            afficherSucces();
+
+        }
+
+
+
+        // =========================
+        // 🎮 COMMENCER UNE PARTIE
+        // =========================
+
+        function commencerJeu(max, nombreVies, niveau) {
 
             maximum = max;
+
             vies = nombreVies;
+
+            difficulte = niveau;
+
             essais = 0;
+
             score = 100;
+
             partieTerminee = false;
 
 
             nombreSecret =
-                Math.floor(Math.random() * maximum) + 1;
+                Math.floor(
+                    Math.random() * maximum
+                ) + 1;
 
 
             document
                 .getElementById("accueil")
+                .classList.add("cache");
+
+
+            document
+                .getElementById("succes")
                 .classList.add("cache");
 
 
@@ -302,19 +527,24 @@
             document
                 .getElementById("niveau")
                 .textContent =
-                "Trouve un nombre entre 1 et " + maximum;
+                "🎯 " +
+                niveau +
+                " : nombre entre 1 et " +
+                maximum;
 
 
             document
                 .getElementById("vies")
                 .textContent =
-                "❤️ Vies : " + vies;
+                "❤️ Vies : " +
+                vies;
 
 
             document
                 .getElementById("score")
                 .textContent =
-                "🏆 Score : " + score;
+                "🏆 Score : " +
+                score;
 
 
             document
@@ -342,12 +572,12 @@
             }
 
 
-            const champ =
-                document.getElementById("nombre");
-
-
-            const nombre =
-                Number(champ.value);
+            let nombre =
+                Number(
+                    document
+                        .getElementById("nombre")
+                        .value
+                );
 
 
             if (
@@ -369,7 +599,6 @@
             essais++;
 
 
-
             // =========================
             // 🎉 VICTOIRE
             // =========================
@@ -377,6 +606,103 @@
             if (nombre === nombreSecret) {
 
                 partieTerminee = true;
+
+
+                // 🍀 Premier coup
+
+                if (essais === 1) {
+                    debloquerSucces("premier_coup");
+                }
+
+
+                // 🎯 Bien joué
+
+                debloquerSucces("bien_joue");
+
+
+                // 🧙 Padawan
+
+                if (difficulte === "Facile") {
+                    debloquerSucces("padawan");
+                }
+
+
+                // ⚔️ Guerrier
+
+                if (difficulte === "Moyen") {
+                    debloquerSucces("guerrier");
+                }
+
+
+                // 🔥 Maître
+
+                if (difficulte === "Difficile") {
+                    debloquerSucces("maitre");
+                }
+
+
+                // ❤️ Survivant
+
+                if (vies === 1) {
+                    debloquerSucces("survivant");
+                }
+
+
+                // 💯 Centenaire
+
+                if (score === 100) {
+                    debloquerSucces("centenaire");
+                }
+
+
+                // 👑 Triple Maître
+
+                if (
+                    difficulte === "Difficile" &&
+                    essais <= 2
+                ) {
+
+                    serieDifficile2++;
+
+                } else {
+
+                    serieDifficile2 = 0;
+
+                }
+
+
+                if (serieDifficile2 >= 3) {
+
+                    debloquerSucces(
+                        "triple_maitre"
+                    );
+
+                }
+
+
+                // ⚡ Éclair
+
+                if (
+                    difficulte === "Difficile" &&
+                    score === 100
+                ) {
+
+                    serieEclair++;
+
+                } else {
+
+                    serieEclair = 0;
+
+                }
+
+
+                if (serieEclair >= 5) {
+
+                    debloquerSucces(
+                        "eclair"
+                    );
+
+                }
 
 
                 document
@@ -394,6 +720,20 @@
                     essais +
                     " essai(s)";
 
+
+                // 🏆 Collectionneur
+
+                if (
+                    succesDebloques.length >= 5
+                ) {
+
+                    debloquerSucces(
+                        "collectionneur"
+                    );
+
+                }
+
+
                 return;
             }
 
@@ -405,8 +745,10 @@
 
             vies--;
 
-            score =
-                Math.max(0, score - 20);
+            score = Math.max(
+                0,
+                score - 20
+            );
 
 
             if (nombre > nombreSecret) {
@@ -422,29 +764,34 @@
                     .getElementById("resultat")
                     .textContent =
                     "⬇️ Trop petit !";
+
             }
 
 
             document
                 .getElementById("vies")
                 .textContent =
-                "❤️ Vies : " + vies;
+                "❤️ Vies : " +
+                vies;
 
 
             document
                 .getElementById("score")
                 .textContent =
-                "🏆 Score : " + score;
+                "🏆 Score : " +
+                score;
 
 
 
-            // =========================
             // 💀 GAME OVER
-            // =========================
 
             if (vies === 0) {
 
                 partieTerminee = true;
+
+                serieDifficile2 = 0;
+
+                serieEclair = 0;
 
 
                 document
@@ -460,6 +807,7 @@
                     nombreSecret +
                     " • Score : " +
                     score;
+
             }
 
         }
@@ -486,198 +834,137 @@
 
 
         // =========================
-        // 📤 PARTAGER
+        // 🏆 OUVRIR SUCCÈS
         // =========================
 
-        async function partager() {
+        document
+            .getElementById("boutonSucces")
+            .addEventListener(
+                "click",
+                function () {
 
-            const texte =
-                "🎮 Viens jouer à mon jeu DEVINE LE NOMBRE !";
-
-
-            if (navigator.share) {
-
-                try {
-
-                    await navigator.share({
-
-                        title:
-                            "Devine le nombre",
-
-                        text:
-                            texte,
-
-                        url:
-                            window.location.href
-
-                    });
-
-                } catch (erreur) {
-
-                    // Partage annulé.
-                }
-
-            } else {
-
-                try {
-
-                    await navigator.clipboard.writeText(
-                        window.location.href
-                    );
-
-                    alert("🔗 Lien copié !");
-
-                } catch (erreur) {
-
-                    alert(
-                        "📋 Copie l'adresse de cette page pour la partager."
-                    );
-
-                }
-
-            }
-
-        }
+                    document
+                        .getElementById("accueil")
+                        .classList.add("cache");
 
 
+                    document
+                        .getElementById("succes")
+                        .classList.remove("cache");
 
-        // =========================
-        // 📱 SYSTÈME DE CLIC
-        // =========================
 
-        function clicTactile(element, action) {
-
-            element.addEventListener(
-                "pointerup",
-                function (event) {
-
-                    event.preventDefault();
-
-                    action();
+                    afficherSucces();
 
                 }
             );
 
-        }
+
+
+        // =========================
+        // 🔙 RETOUR SUCCÈS
+        // =========================
+
+        document
+            .getElementById("retourSucces")
+            .addEventListener(
+                "click",
+                function () {
+
+                    document
+                        .getElementById("succes")
+                        .classList.add("cache");
+
+
+                    document
+                        .getElementById("accueil")
+                        .classList.remove("cache");
+
+                }
+            );
 
 
 
         // =========================
-        // 🎮 RÉCUPÉRATION DES BOUTONS
+        // 🎮 BOUTONS DIFFICULTÉ
         // =========================
 
-        const boutonFacile =
-            document.getElementById("facile");
+        document
+            .getElementById("facile")
+            .addEventListener(
+                "click",
+                function () {
 
-        const boutonMoyen =
-            document.getElementById("moyen");
+                    commencerJeu(
+                        10,
+                        5,
+                        "Facile"
+                    );
 
-        const boutonDifficile =
-            document.getElementById("difficile");
-
-        const boutonDeviner =
-            document.getElementById("deviner");
-
-        const boutonRejouer =
-            document.getElementById("rejouer");
-
-        const boutonPartager =
-            document.getElementById("partager");
+                }
+            );
 
 
+        document
+            .getElementById("moyen")
+            .addEventListener(
+                "click",
+                function () {
 
-        // =========================
-        // 🟢 FACILE
-        // =========================
+                    commencerJeu(
+                        50,
+                        4,
+                        "Moyen"
+                    );
 
-        clicTactile(
-            boutonFacile,
-            function () {
-
-                commencerJeu(10, 5);
-
-            }
-        );
-
-
-
-        // =========================
-        // 🟠 MOYEN
-        // =========================
-
-        clicTactile(
-            boutonMoyen,
-            function () {
-
-                commencerJeu(50, 4);
-
-            }
-        );
+                }
+            );
 
 
+        document
+            .getElementById("difficile")
+            .addEventListener(
+                "click",
+                function () {
 
-        // =========================
-        // 🔴 DIFFICILE
-        // =========================
+                    commencerJeu(
+                        100,
+                        3,
+                        "Difficile"
+                    );
 
-        clicTactile(
-            boutonDifficile,
-            function () {
-
-                commencerJeu(100, 3);
-
-            }
-        );
+                }
+            );
 
 
 
         // =========================
-        // 🎯 DEVINER
+        // 🎯 BOUTON DEVINER
         // =========================
 
-        clicTactile(
-            boutonDeviner,
-            function () {
-
-                deviner();
-
-            }
-        );
+        document
+            .getElementById("deviner")
+            .addEventListener(
+                "click",
+                deviner
+            );
 
 
 
         // =========================
-        // 🔄 REJOUER
+        // 🔄 BOUTON REJOUER
         // =========================
 
-        clicTactile(
-            boutonRejouer,
-            function () {
-
-                retourAccueil();
-
-            }
-        );
+        document
+            .getElementById("rejouer")
+            .addEventListener(
+                "click",
+                retourAccueil
+            );
 
 
 
         // =========================
-        // 📤 PARTAGER
-        // =========================
-
-        clicTactile(
-            boutonPartager,
-            function () {
-
-                partager();
-
-            }
-        );
-
-
-
-        // =========================
-        // ⌨️ ENTRÉE
+        // ⌨️ TOUCHE ENTRÉE
         // =========================
 
         document
@@ -687,19 +974,19 @@
                 function (event) {
 
                     if (event.key === "Enter") {
-
-                        event.preventDefault();
-
                         deviner();
-
                     }
 
                 }
             );
+
+
+        // 🏆 Charger l'affichage
+
+        afficherSucces();
 
     </script>
 
 </body>
 
 </html>
-```
