@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Devine le Nombre — V2.3</title>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#202040;--panel:#303060;--card:#242450;--accent:#fde68a}
+body{margin:0;min-height:100vh;display:flex;justify-content:center;align-items:center;font-family:Arial,sans-serif;background:var(--bg);color:#fff;padding:20px;transition:.3s}
+body.theme-ocean{--bg:#082f49;--panel:#0c4a6e;--card:#075985}
+body.theme-forest{--bg:#052e16;--panel:#14532d;--card:#166534}
+body.theme-sunset{--bg:#431407;--panel:#7c2d12;--card:#9a3412}
+body.theme-galaxy{--bg:#12052b;--panel:#271052;--card:#3b1b70}
+body.theme-ice{--bg:#172554;--panel:#1e40af;--card:#1d4ed8}
+body.theme-candy{--bg:#500724;--panel:#9d174d;--card:#be185d}
+body.theme-cyber{--bg:#09090b;--panel:#18181b;--card:#27272a;--accent:#22c55e}
+body.theme-gold{--bg:#451a03;--panel:#78350f;--card:#92400e}
+.ecran{width:100%;max-width:560px;padding:25px;text-align:center;background:var(--panel);border-radius:24px;box-shadow:0 18px 50px #0005;animation:pop .3s ease}
+.cache{display:none!important}
+h1{font-size:29px;margin:8px 0 15px}h2{font-size:22px}p{font-size:17px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.badge{background:#0003;padding:8px 12px;border-radius:999px;font-weight:bold}
+button{display:block;width:100%;margin:9px 0;padding:14px;border:0;border-radius:12px;font-size:16px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;transition:.15s;box-shadow:0 5px 0 #0003;background:#fff;color:#222;font-weight:bold}
+button:hover{filter:brightness(1.08);transform:translateY(-2px)}button:active{transform:translateY(2px)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-green{background:#86efac}.btn-blue{background:#93c5fd}.btn-red{background:#fca5a5}.btn-purple{background:#d8b4fe}.btn-gold{background:#fde68a}.btn-dark{background:#242450;color:#fff;box-shadow:none}
+body.buttons-round button{border-radius:999px}body.buttons-square button{border-radius:4px}body.buttons-neon button{box-shadow:0 0 13px #fff8}
+body.buttons-gradient button:not(.btn-dark){background:linear-gradient(110deg,#a5b4fc,#f0abfc);color:#21143c}
+input{width:145px;padding:13px;margin:8px;border:0;border-radius:10px;font-size:22px;text-align:center}
+#resultat{min-height:35px;font-size:19px;font-weight:bold}
+.small{font-size:13px;opacity:.85}.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.carte{background:var(--card);padding:14px;border-radius:14px;text-align:left;margin:8px 0}
+.carte strong{display:block;margin-bottom:5px}.locked{opacity:.55}
+.progress{height:13px;background:#ffffff30;border-radius:99px;overflow:hidden;margin:8px 0}
+.progress>div{height:100%;background:#fde68a;width:0%;transition:width .25s}
+.rank{font-size:22px;font-weight:bold}.barline{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#0003;margin:3px;font-size:12px}
+.item-preview{font-size:28px}.selection{outline:3px solid white}
+.scrollable{max-height:320px;overflow-y:auto;padding-right:4px}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(max-width:500px){body{align-items:flex-start;padding:12px}.ecran{padding:18px}h1{font-size:25px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<button id="soundBtn" class="btn-dark" style="position:fixed;top:10px;right:10px;width:auto;z-index:5">🔊 SON : ON</button>
+
+<section id="home" class="ecran">
+ <div class="topbar"><span class="badge">V2.3</span><span id="coinsHome" class="badge">🪙 0</span></div>
+ <div style="font-size:42px" id="homeAvatar">🧙</div>
+ <h1>🎮 DEVINE LE NOMBRE</h1>
+ <div class="pill" id="homeRankBadge">🥉 Bronze (0 pts)</div>
+ <p>Bienvenue dans la saison infinie !</p>
+ <div class="carte">
+  <div class="barline"><strong>🎟️ PASS DE SAISON (Niveau <span id="passLevelHomeNum">1</span>)</strong><span id="passXpHome">0 / 100 XP</span></div>
+  <div class="progress"><div id="passBarHome"></div></div>
+ </div>
+ <button id="classicBtn" class="btn-green">🎯 MODE CLASSIQUE</button>
+ <button id="rankedBtn" class="btn-red">⚔️ MODE CLASSÉ — VS BOT</button>
+ <div class="grid">
+  <button id="passBtn" class="btn-purple">🎟️ PASS & XP</button><button id="questsBtn" class="btn-blue">📜 QUÊTES</button>
+  <button id="shopBtn" class="btn-gold">🛍️ BOUTIQUE</button><button id="customBtn" class="btn-purple">🎨 PERSONNALISER</button>
+  <button id="achBtn" class="btn-gold">🏆 SUCCÈS</button><button id="newsBtn" class="btn-dark">📰 JOURNAL</button>
+ </div>
+</section>
+
+<section id="difficulty" class="ecran cache">
+ <h1>🎯 MODE CLASSIQUE</h1>
+ <p>Choisis la difficulté de ta partie :</p>
+ <button id="easyBtn" class="btn-green">🟢 FACILE — de 1 à 10 • 8 vies</button>
+ <button id="mediumBtn" class="btn-blue">🟡 MOYEN — de 1 à 50 • 7 vies</button>
+ <button id="hardBtn" class="btn-red">🔴 DIFFICILE — de 1 à 100 • 5 vies</button>
+ <button id="difficultyBackBtn" class="btn-dark">🔙 RETOUR</button>
+</section>
+
+<section id="game" class="ecran cache">
+ <div class="topbar"><span id="gameMode" class="badge">CLASSIQUE</span><span id="coinsGame" class="badge">🪙 0</span></div>
+ <h1 id="gameTitle">🎯 DEVINE !</h1><p id="gameInfo"></p><p id="gameTurn"></p>
+ <p id="resultat">Bonne chance ! 🍀</p>
+ <input id="guess" type="number" min="1" inputmode="numeric" placeholder="Nombre">
+ <button id="guessBtn" class="btn-green">🎯 VALIDER</button>
+ <button id="homeBtn" class="btn-dark">🔙 ACCUEIL</button>
+</section>
+
+<section id="pass" class="ecran cache">
+ <h1>🎟️ PASS INFINI</h1><p>Gagne de l'XP pour monter de niveau indéfiniment. Chaque niveau demande plus d'XP !</p>
+ <div class="carte">
+  <div class="rank" id="passLevel">Niveau 1</div>
+  <div class="progress"><div id="passBar"></div></div>
+  <p id="passXp">0 / 100 XP</p>
+  <strong id="passReward">Récompense active : 🪙 5 pièces par palier</strong>
+ </div>
+ <button class="btn-dark back">🔙 RETOUR</button>
+</section>
+
+<section id="quests" class="ecran cache">
+ <h1>📜 QUÊTES & DÉFIS</h1>
+ <p class="small">Les pièces sont très rares et précieuses !</p>
+ <div class="scrollable" id="questList"></div>
+ <button class="btn-dark back">🔙 RETOUR</button>
+</section>
+
+<section id="shop" class="ecran cache">
+ <div class="topbar"><h1>🛍️ BOUTIQUE GÉANTE</h1><span id="coinsShop" class="badge">🪙 0</span></div>
+ <p class="small">Débloque des styles exclusifs avec tes pièces.</p>
+ <div class="scrollable" id="shopList"></div>
+ <button class="btn-dark back">🔙 RETOUR</button>
+</section>
+
+<section id="custom" class="ecran cache">
+ <h1>🎨 PERSONNALISATION</h1>
+ <div class="carte"><div id="customAvatar" class="item-preview">🧙</div><strong>Aperçu du profil</strong></div>
+ <div class="scrollable">
+  <h2>🌌 Fonds d'écran</h2><div id="wallpapers" class="grid"></div>
+  <h2>🔘 Boutons</h2><div id="buttonStyles" class="grid"></div>
+  <h2>😎 Avatars</h2><div id="avatars" class="grid"></div>
+ </div>
+ <button class="btn-dark back">🔙 RETOUR</button>
+</section>
+
+<section id="achievements" class="ecran cache">
+ <h1>🏆 SUCCÈS (16)</h1><p id="achCount"></p>
+ <div class="scrollable" id="achList"></div>
+ <button class="btn-dark back">🔙 RETOUR</button>
+</section>
+
+<section id="news" class="ecran cache">
+ <h1>📰 JOURNAL DES MISES À JOUR</h1>
+ <div class="scrollable">
+  <div class="carte"><strong>V2.3 — Économie Hardcore & 16 Succès</strong><p>Gains de pièces drastiquement réduits (1 à 3 pièces par partie / 5 par niveau). 16 succès à accomplir !</p></div>
+  <div class="carte"><strong>V2.2 — Rangs et Pass Infini</strong><p>Rangs compétitifs et progression d'XP exponentielle.</p></div>
+ </div>
+ <button class="btn-dark back">🔙 RETOUR</button>
+</section>
+
+<script>
+const $=id=>document.getElementById(id);
+const screens=['home','difficulty','game','pass','quests','shop','custom','achievements','news'];
+function show(id){screens.forEach(s=>$(s).classList.toggle('cache',s!==id));if(id==='home')renderHome();if(id==='pass')renderPass();if(id==='quests')renderQuests();if(id==='shop')renderShop();if(id==='custom')renderCustom();if(id==='achievements')renderAchievements()}
+const read=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
+let coins=Number(localStorage.getItem('v2coins')||5),xp=Number(localStorage.getItem('v2xp')||0),rating=Number(localStorage.getItem('v2rating')||0);
+let owned=read('v2owned',['wall-classic','btn-classic','avatar-wizard']);
+let equipped=read('v2equipped',{wall:'wall-classic',button:'btn-classic',avatar:'🧙'});
+let questState=read('v2quests',{wins:0,rankWins:0,plays:0,guesses:0,easyWins:0,hardWins:0,botWins:0,claimed:[]});
+let unlocked=read('v2ach',[]);
+let sound=localStorage.getItem('v2sound')!=='off';
+let mode='classic',secret=0,max=10,lives=5,tries=0,score=100,ended=false,botLow=1,botHigh=100;
+
+const catalog=[
+ {id:'wall-ocean',name:'🌊 Océan Profond',price:25,type:'wall',value:'theme-ocean'},
+ {id:'wall-forest',name:'🌲 Forêt Mystique',price:25,type:'wall',value:'theme-forest'},
+ {id:'wall-sunset',name:'🌅 Coucher de Soleil',price:30,type:'wall',value:'theme-sunset'},
+ {id:'wall-galaxy',name:'🌌 Voie Lactée',price:45,type:'wall',value:'theme-galaxy'},
+ {id:'wall-ice',name:'🧊 Banquise',price:35,type:'wall',value:'theme-ice'},
+ {id:'wall-candy',name:'🍬 Royaume Sucre',price:35,type:'wall',value:'theme-candy'},
+ {id:'wall-cyber',name:'💻 Cyberpunk',price:50,type:'wall',value:'theme-cyber'},
+ {id:'wall-gold',name:'👑 Trône Doré',price:75,type:'wall',value:'theme-gold'},
+
+ {id:'btn-round',name:'🔘 Bulles Rondes',price:15,type:'button',value:'buttons-round'},
+ {id:'btn-square',name:'⬛ Blocs Carrés',price:15,type:'button',value:'buttons-square'},
+ {id:'btn-neon',name:'💡 Néons Lumineux',price:30,type:'button',value:'buttons-neon'},
+ {id:'btn-gradient',name:'🌈 Dégradés Magiques',price:40,type:'button',value:'buttons-gradient'},
+
+ {id:'avatar-robot',name:'🤖 Robot X-9',price:10,type:'avatar',value:'🤖'},
+ {id:'avatar-ninja',name:'🥷 Ninja Sombre',price:15,type:'avatar',value:'🥷'},
+ {id:'avatar-alien',name:'👽 Alien Zorg',price:20,type:'avatar',value:'👽'},
+ {id:'avatar-dragon',name:'🐲 Dragon Ancien',price:35,type:'avatar',value:'🐲'},
+ {id:'avatar-cat',name:'🐱 Chat Cyber',price:25,type:'avatar',value:'🐱'},
+ {id:'avatar-fox',name:'🦊 Renard Malin',price:25,type:'avatar',value:'🦊'},
+ {id:'avatar-skull',name:'💀 Crâne Maudit',price:30,type:'avatar',value:'💀'},
+ {id:'avatar-ghost',name:'👻 Fantôme Joyeux',price:25,type:'avatar',value:'👻'},
+ {id:'avatar-wizard',name:'🧙 Sorcier Suprême',price:40,type:'avatar',value:'🧙'},
+ {id:'avatar-king',name:'👑 Roi des Nombres',price:80,type:'avatar',value:'👑'}
+];
+
+function getRankInfo(r){
+ if(r<50) return {name:'🥉 Bronze', badge:'🥉 Bronze', color:'#cd7f32'};
+ if(r<150) return {name:'🥈 Argent', badge:'🥈 Argent', color:'#c0c0c0'};
+ if(r<300) return {name:'🥇 Or', badge:'🥇 Or', color:'#ffd700'};
+ if(r<500) return {name:'💎 Platine', badge:'💎 Platine', color:'#38bdf8'};
+ if(r<800) return {name:'👑 Diamant', badge:'👑 Diamant', color:'#c084fc'};
+ return {name:'🔥 Maître Légendaire', badge:'🔥 Maître', color:'#f43f5e'};
+}
+
+function getLevelData(totalXp){
+ let lvl=1;
+ let req=100;
+ let rem=totalXp;
+ while(rem>=req){
+  rem-=req;
+  lvl++;
+  req=Math.floor(100 + (lvl-1)*80);
+ }
+ return {level:lvl, currentXp:rem, nextReq:req};
+}
+
+// 16 Succès complets et variés
+const achievements=[
+ ['first','🍀 Coup de Chance','Gagner au tout premier essai.'],
+ ['classic','🎯 Premier Pas','Gagner une partie en mode classique.'],
+ ['rank','⚔️ Gladiateur','Gagner une partie en mode classé.'],
+ ['five','🔥 Sur la Lancée','Gagner 5 parties au total.'],
+ ['twenty','🌟 Expert du Nombre','Gagner 20 parties au total.'],
+ ['fifty','🏆 Légende Vivante','Gagner 50 parties au total.'],
+ ['quest1','📜 Débutant des Quêtes','Terminer 1 quête.'],
+ ['quest5','📜 Chasseur de Primes','Terminer 5 quêtes.'],
+ ['easy','🟢 Échauffement','Gagner en mode Facile.'],
+ ['hard','🔴 Tête Brûlée','Gagner en mode Difficile.'],
+ ['rankSilver','🥈 Rang Argent','Atteindre le rang Argent (150 pts).'],
+ ['rankGold','🥇 Rang Or','Atteindre le rang Or (300 pts).'],
+ ['passLevel5','🎟️ Niveau 5 du Pass','Atteindre le niveau 5 du Pass.'],
+ ['passLevel10','🎟️ Niveau 10 du Pass','Atteindre le niveau 10 du Pass.'],
+ ['collector','🛍️ Collectionneur','Acheter 3 objets dans la boutique.'],
+ ['rich','🪙 Économe','Accumuler 50 pièces au total.']
+];
+
+function checkAchievements(){
+ if(questState.wins>=1) unlock('classic');
+ if(questState.wins>=5) unlock('five');
+ if(questState.wins>=20) unlock('twenty');
+ if(questState.wins>=50) unlock('fifty');
+ if(questState.easyWins>=1) unlock('easy');
+ if(questState.hardWins>=1) unlock('hard');
+ if(questState.rankWins>=1) unlock('rank');
+ if(questState.claimed.length>=1) unlock('quest1');
+ if(questState.claimed.length>=5) unlock('quest5');
+ if(rating>=150) unlock('rankSilver');
+ if(rating>=300) unlock('rankGold');
+ if(getLevelData(xp).level>=5) unlock('passLevel5');
+ if(getLevelData(xp).level>=10) unlock('passLevel10');
+ if(owned.length>=6) unlock('collector');
+ if(coins>=50) unlock('rich');
+}
+
+function persist(){
+ checkAchievements();
+ localStorage.setItem('v2coins',coins);
+ localStorage.setItem('v2xp',xp);
+ localStorage.setItem('v2rating',rating);
+ save('v2owned',owned);
+ save('v2equipped',equipped);
+ save('v2quests',questState);
+ save('v2ach',unlocked);
+ refreshCoins();
+}
+
+function refreshCoins(){['coinsHome','coinsGame','coinsShop'].forEach(id=>{if($(id))$(id).textContent='🪙 '+coins})}
+
+function addXP(n){
+ let oldLvl=getLevelData(xp).level;
+ xp+=n;
+ let newLvlData=getLevelData(xp);
+ if(newLvlData.level>oldLvl){
+  coins+=5; // 5 pièces seulement par niveau
+  alert('🎟️ Niveau '+newLvlData.level+' du Pass !\nGain : 🪙 5 pièces');
+ }
+ persist();
+ renderHome();
+}
+
+function addCoins(n){coins+=n;persist()}
+function unlock(id){if(!unlocked.includes(id)){unlocked.push(id);save('v2ach',unlocked)}}
+
+function applyLook(){
+ document.body.className='';
+ let w=catalog.find(x=>x.id===equipped.wall);
+ if(w)document.body.classList.add(w.value);
+ if(equipped.button!=='btn-classic'){
+  let b=catalog.find(x=>x.id===equipped.button);
+  if(b)document.body.classList.add(b.value);
+ }
+ $('homeAvatar').textContent=equipped.avatar;
+ $('customAvatar').textContent=equipped.avatar;
+}
+
+function renderHome(){
+ refreshCoins();
+ let lData=getLevelData(xp);
+ $('passLevelHomeNum').textContent=lData.level;
+ $('passXpHome').textContent=lData.currentXp+' / '+lData.nextReq+' XP';
+ $('passBarHome').style.width=(lData.currentXp/lData.nextReq*100)+'%';
+ 
+ let rInfo=getRankInfo(rating);
+ $('homeRankBadge').textContent=rInfo.name+' ('+rating+' pts)';
+ applyLook();
+}
+
+function renderPass(){
+ let lData=getLevelData(xp);
+ $('passLevel').textContent='Niveau '+lData.level;
+ $('passXp').textContent=lData.currentXp+' / '+lData.nextReq+' XP • Total : '+xp+' XP';
+ $('passBar').style.width=(lData.currentXp/lData.nextReq*100)+'%';
+ $('passReward').textContent='Récompense au niveau suivant : 🪙 5 pièces';
+}
+
+const questDefs=[
+ {id:'wins1',title:'🏅 Gagner 2 parties',target:2,reward:2,xp:30,field:'wins'},
+ {id:'wins2',title:'🏅 Gagner 5 parties',target:5,reward:4,xp:60,field:'wins'},
+ {id:'wins3',title:'🏅 Gagner 15 parties',target:15,reward:8,xp:150,field:'wins'},
+ {id:'rank1',title:'⚔️ Gagner 1 match classé',target:1,reward:3,xp:40,field:'rankWins'},
+ {id:'rank2',title:'⚔️ Gagner 5 matchs classés',target:5,reward:7,xp:100,field:'rankWins'},
+ {id:'plays1',title:'🎮 Jouer 3 parties',target:3,reward:2,xp:20,field:'plays'},
+ {id:'plays2',title:'🎮 Jouer 10 parties',target:10,reward:4,xp:70,field:'plays'},
+ {id:'plays3',title:'🎮 Jouer 25 parties',target:25,reward:9,xp:130,field:'plays'},
+ {id:'guess1',title:'🔢 Faire 10 propositions',target:10,reward:2,xp:25,field:'guesses'},
+ {id:'guess2',title:'🔢 Faire 50 propositions',target:50,reward:5,xp:90,field:'guesses'},
+ {id:'guess3',title:'🔢 Faire 150 propositions',target:150,reward:10,xp:200,field:'guesses'},
+ {id:'easy1',title:'🟢 Gagner en mode Facile',target:1,reward:2,xp:20,field:'easyWins'},
+ {id:'hard1',title:'🔴 Gagner en mode Difficile',target:1,reward:5,xp:70,field:'hardWins'}
+];
+
+function renderQuests(){
+ $('questList').innerHTML=questDefs.map(q=>{
+  let val=Math.min(q.target, questState[q.field]||0);
+  let done=val>=q.target;
+  let claimed=questState.claimed.includes(q.id);
+  return `<div class="carte">
+   <strong>${q.title}</strong>
+   <div class="progress"><div style="width:${val/q.target*100}%"></div></div>
+   <span class="small">${val}/${q.target} • 🪙 ${q.reward} pièces • ✨ ${q.xp} XP</span>
+   <button class="btn-gold" ${!done||claimed?'disabled':''} onclick="claimQuest('${q.id}')">${claimed?'✅ Récupérée':done?'🎁 RÉCUPÉRER':'🔒 En cours'}</button>
+  </div>`;
+ }).join('');
+}
+
+function claimQuest(id){
+ let q=questDefs.find(x=>x.id===id);
+ if(!q||questState.claimed.includes(id)||(questState[q.field]||0)<q.target)return;
+ questState.claimed.push(id);
+ addCoins(q.reward);
+ addXP(q.xp);
+ persist();
+ renderQuests();
+}
+
+function renderShop(){
+ $('shopList').innerHTML=catalog.map(i=>{
+  let has=owned.includes(i.id);
+  let isOn=i.type==='wall'?equipped.wall===i.id:i.type==='button'?equipped.button===i.id:equipped.avatar===i.value;
+  return `<div class="carte">
+   <strong>${i.name}</strong>
+   <span class="small">${i.type==='wall'?'Fond d’écran':i.type==='button'?'Style de boutons':'Avatar'}</span>
+   <div class="barline"><b>${has?'✅ Possédé':'🪙 '+i.price+' pièces'}</b>${has&&isOn?'<span>Équipé</span>':''}</div>
+   ${has?`<button class="btn-blue" type="button" data-equip="${i.id}">✨ ÉQUIPER</button>`:`<button class="btn-gold" type="button" data-buy="${i.id}">🛒 ACHETER</button>`}
+  </div>`;
+ }).join('');
+ $('shopList').querySelectorAll('[data-buy]').forEach(b=>b.addEventListener('click',()=>buyItem(b.dataset.buy)));
+ $('shopList').querySelectorAll('[data-equip]').forEach(b=>b.addEventListener('click',()=>equipItem(b.dataset.equip)));
+ refreshCoins();
+}
+
+function buyItem(id){
+ let i=catalog.find(x=>x.id===id);
+ if(!i||owned.includes(id))return;
+ if(coins<i.price){alert('Pas assez de pièces !');return}
+ coins-=i.price;
+ owned.push(id);
+ persist();
+ renderShop();
+}
+
+function equipItem(id){
+ let i=catalog.find(x=>x.id===id);
+ if(!i||!owned.includes(id))return;
+ if(i.type==='wall')equipped.wall=id;
+ if(i.type==='button')equipped.button=id;
+ if(i.type==='avatar')equipped.avatar=i.value;
+ persist();
+ applyLook();
+ renderShop();
+}
+
+function renderCustom(){
+ let groups={wall:$('wallpapers'),button:$('buttonStyles'),avatar:$('avatars')};
+ Object.values(groups).forEach(x=>x.innerHTML='');
+ 
+ [['Classique','wall-classic'],...catalog.filter(x=>x.type==='wall').map(x=>[x.name,x.id])].forEach(([name,id])=>{
+  let has=owned.includes(id),b=document.createElement('button');
+  b.textContent=name+(equipped.wall===id?' ✅':'');b.disabled=!has;b.className=equipped.wall===id?'selection':'';
+  b.onclick=()=>{equipped.wall=id;persist();applyLook();renderCustom()};groups.wall.appendChild(b);
+ });
+
+ [['Classique','btn-classic'],...catalog.filter(x=>x.type==='button').map(x=>[x.name,x.id])].forEach(([name,id])=>{
+  let has=owned.includes(id),b=document.createElement('button');
+  b.textContent=name+(equipped.button===id?' ✅':'');b.disabled=!has;b.className=equipped.button===id?'selection':'';
+  b.onclick=()=>{equipped.button=id;persist();applyLook();renderCustom()};groups.button.appendChild(b);
+ });
+
+ [['🧙','🧙','avatar-wizard'],...catalog.filter(x=>x.type==='avatar').map(x=>[x.value,x.value,x.id])].forEach(([name,val,id])=>{
+  let has=owned.includes(id),b=document.createElement('button');
+  b.textContent=name+(equipped.avatar===val?' ✅':'');b.disabled=!has;b.className=equipped.avatar===val?'selection':'';
+  b.onclick=()=>{equipped.avatar=val;persist();applyLook();renderCustom()};groups.avatar.appendChild(b);
+ });
+}
+
+function renderAchievements(){
+ checkAchievements();
+ $('achCount').textContent=unlocked.length+' / '+achievements.length+' débloqués';
+ $('achList').innerHTML=achievements.map(a=>`<div class="carte ${unlocked.includes(a[0])?'':'locked'}"><strong>${unlocked.includes(a[0])?'✅':'🔒'} ${a[1]}</strong>${a[2]}</div>`).join('');
+}
+
+function startGame(which,difficulty='medium'){
+ mode=which;
+ const settings={
+  easy:{max:10,lives:8,label:'FACILE'},
+  medium:{max:50,lives:7,label:'MOYEN'},
+  hard:{max:100,lives:5,label:'DIFFICILE'}
+ };
+ const chosen=settings[difficulty]||settings.medium;
+ max=which==='ranked'?100:chosen.max;
+ lives=which==='ranked'?5:chosen.lives;
+ tries=0;score=100;ended=false;
+ secret=Math.floor(Math.random()*max)+1;
+ botLow=1;botHigh=max;
+ $('gameMode').textContent=which==='ranked'?'⚔️ CLASSÉ ('+getRankInfo(rating).name+')':'🎯 CLASSIQUE • '+chosen.label;
+ $('gameTitle').textContent=which==='ranked'?'⚔️ DUEL CLASSÉ':'🎯 DEVINE !';
+ $('gameInfo').textContent=which==='ranked'
+  ?'Affronte le bot ! Gagne des points de classement.'
+  :'Trouve le nombre entre 1 et '+max+' • '+lives+' vies';
+ $('gameTurn').textContent='❤️ Vies : '+lives+' • 🏆 Score : '+score;
+ $('resultat').textContent='À toi de jouer ! 🍀';
+ $('guess').value='';$('guess').disabled=false;$('guessBtn').disabled=false;
+ show('game');$('guess').focus();
+}
+
+function botGuess(){
+ if(botLow>botHigh)return null;
+ let n=Math.floor((botLow+botHigh)/2);
+ if(n===secret)return n;
+ if(n<secret)botLow=n+1;else botHigh=n-1;
+ return n;
+}
+
+function finish(win,who){
+ ended=true;
+ $('guess').disabled=true;$('guessBtn').disabled=true;
+ if(win){
+  // Gains de pièces ultra faibles
+  let reward=mode==='ranked'?3:1;
+  addCoins(reward);
+  addXP(mode==='ranked'?40:15);
+  questState.wins++;
+  if(mode==='classic'){
+   if(max===10) questState.easyWins++;
+   if(max===100) questState.hardWins++;
+  }
+  if(mode==='ranked'){
+   questState.rankWins++;
+   rating+=20;
+  }
+  if(tries===1)unlock('first');
+
+  let rInfo=getRankInfo(rating);
+  $('resultat').textContent='🎉 Victoire ! '+who+' • +'+reward+' pièce(s)';
+  $('gameTurn').textContent=mode==='ranked'?'🏅 Classement : '+rating+' pts ('+rInfo.name+')':'🏆 Score final : '+score;
+ }else{
+  $('resultat').textContent='🤖 Le bot a trouvé '+secret+' !';
+  $('gameTurn').textContent='Défaite • Classement -10 pts';
+  if(mode==='ranked') rating=Math.max(0,rating-10);
+  addXP(5);
+ }
+ questState.plays++;
+ persist();
+ $('coinsGame').textContent='🪙 '+coins;
+}
+
+function guess(){
+ if(ended)return;
+ let n=Number($('guess').value);
+ if(!Number.isInteger(n)||n<1||n>max){
+  $('resultat').textContent='⚠️ Entre un nombre entre 1 et '+max+'.';
+  return;
+ }
+ tries++;
+ questState.guesses++;
+ if(n===secret){
+  finish(true,'Tu as gagné');
+  return;
+ }
+ score=Math.max(0,score-15);
+ let hint=n>secret?'⬇️ Trop grand !':'⬆️ Trop petit !';
+ 
+ if(mode==='classic'){
+  lives--;
+  $('resultat').textContent=hint;
+  $('gameTurn').textContent='❤️ Vies : '+lives+' • 🏆 Score : '+score;
+  if(lives<=0){
+   ended=true;
+   $('resultat').textContent='💥 Perdu ! Le nombre était '+secret;
+   $('guess').disabled=true;$('guessBtn').disabled=true;
+   questState.plays++;
+   addXP(5);
+   persist();
+  }
+  return;
+ }
+
+ $('resultat').textContent=hint+' Le bot réfléchit…';
+ $('guess').value='';
+ setTimeout(()=>{
+  if(ended)return;
+  let b=botGuess();
+  if(b===secret){
+   finish(false,'Le bot a gagné');
+   return;
+  }
+  let bh=b>secret?'⬇️':'⬆️';
+  $('gameTurn').textContent='🤖 Le bot propose '+b+' : '+bh+' • Tour suivant';
+  $('resultat').textContent='À toi ! '+hint;
+  persist();
+ },450);
+}
+
+function backHome(){show('home')}
+
+$('classicBtn').onclick=()=>show('difficulty');
+$('easyBtn').onclick=()=>startGame('classic','easy');
+$('mediumBtn').onclick=()=>startGame('classic','medium');
+$('hardBtn').onclick=()=>startGame('classic','hard');
+$('difficultyBackBtn').onclick=backHome;
+$('rankedBtn').onclick=()=>startGame('ranked');
+$('guessBtn').onclick=guess;
+$('guess').addEventListener('keydown',e=>{if(e.key==='Enter')guess()});
+$('homeBtn').onclick=backHome;
+$('passBtn').onclick=()=>show('pass');
+$('questsBtn').onclick=()=>show('quests');
+$('shopBtn').onclick=()=>show('shop');
+$('customBtn').onclick=()=>show('custom');
+$('achBtn').onclick=()=>show('achievements');
+$('newsBtn').onclick=()=>show('news');
+document.querySelectorAll('.back').forEach(b=>b.onclick=backHome);
+
+$('soundBtn').onclick=()=>{
+ sound=!sound;
+ localStorage.setItem('v2sound',sound?'on':'off');
+ $('soundBtn').textContent=sound?'🔊 SON : ON':'🔇 SON : OFF';
+};
+if(!sound)$('soundBtn').textContent='🔇 SON : OFF';
+
+renderHome();
+refreshCoins();
+</script>
+</body>
+</html>
